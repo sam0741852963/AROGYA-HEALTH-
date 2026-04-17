@@ -4,6 +4,9 @@ import { Bot, Mic, MicOff, Send, X, Globe, Sparkles, User, Loader2, Stethoscope,
 import { consultAgent } from '../services/geminiService';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../App';
+import { db } from '../firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 const LANGUAGES = [
   { code: 'English', flag: '🇬🇧' },
@@ -23,6 +26,7 @@ export default function AIAgent() {
   const [loading, setLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Speech Recognition Setup
   const recognitionRef = useRef<any>(null);
@@ -65,6 +69,21 @@ export default function AIAgent() {
     try {
       const result = await consultAgent(text, language);
       setMessages(prev => [...prev, { role: 'bot', content: result }]);
+
+      // Save to history if user is logged in
+      if (user) {
+        try {
+          await addDoc(collection(db, 'analysis'), {
+            userId: user.uid,
+            query: text,
+            report: JSON.stringify(result),
+            language,
+            createdAt: new Date().toISOString()
+          });
+        } catch (saveErr) {
+          console.error("Failed to save analysis history:", saveErr);
+        }
+      }
     } catch (err) {
       setMessages(prev => [...prev, { role: 'bot', content: { analysis: "I apologize, but I'm unable to analyze that right now. Please try again." } }]);
     } finally {

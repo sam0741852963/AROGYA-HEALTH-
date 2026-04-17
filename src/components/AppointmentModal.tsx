@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Doctor } from '../types';
 import { db, auth } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Calendar, Clock, IndianRupee, AlertCircle, CheckCircle2, User, Phone, FileText, Send, Loader2, ShieldCheck } from 'lucide-react';
+import { X, Calendar, Clock, IndianRupee, AlertCircle, CheckCircle2, User, Phone, FileText, Send, Loader2, ShieldCheck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../App';
+import { format, addDays, isSameDay, startOfToday } from 'date-fns';
 
 interface Props {
   doctor: Doctor | null;
@@ -14,7 +15,7 @@ interface Props {
 
 export default function AppointmentModal({ doctor, onClose }: Props) {
   const { user, login } = useAuth();
-  const [date, setDate] = useState('');
+  const [selectedDate, setSelectedDate] = useState<Date>(startOfToday());
   const [time, setTime] = useState('');
   const [phone, setPhone] = useState('');
   const [reason, setReason] = useState('');
@@ -23,11 +24,15 @@ export default function AppointmentModal({ doctor, onClose }: Props) {
   const [forwarding, setForwarding] = useState(false);
   const [error, setError] = useState('');
 
+  const next14Days = useMemo(() => {
+    return Array.from({ length: 14 }).map((_, i) => addDays(startOfToday(), i));
+  }, []);
+
   const slots = ["09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM"];
 
   const handleBook = async () => {
     if (!user) return login();
-    if (!date || !time || !phone) return setError('Please fill in all required patient details.');
+    if (!selectedDate || !time || !phone) return setError('Please fill in all required patient details.');
 
     setLoading(true);
     setError('');
@@ -41,7 +46,7 @@ export default function AppointmentModal({ doctor, onClose }: Props) {
         patientEmail: user.email,
         patientPhone: phone,
         reason: reason,
-        date,
+        date: format(selectedDate, 'yyyy-MM-dd'),
         timeSlot: time,
         status: 'pending',
         createdAt: new Date().toISOString()
@@ -117,31 +122,58 @@ export default function AppointmentModal({ doctor, onClose }: Props) {
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 <div className="space-y-6">
                     <div>
-                       <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                          <Calendar size={14} /> Select Date
+                       <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                          <Calendar size={14} /> Availability Calendar (Next 2 Weeks)
                        </label>
-                       <input 
-                         type="date" 
-                         min={new Date().toISOString().split('T')[0]}
-                         value={date}
-                         onChange={(e) => setDate(e.target.value)}
-                         className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-accent bg-slate-50 font-bold"
-                       />
+                       
+                       <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar -mx-2 px-2">
+                          {next14Days.map((d) => (
+                            <button
+                              key={d.toISOString()}
+                              onClick={() => setSelectedDate(d)}
+                              className={cn(
+                                "shrink-0 w-20 h-24 rounded-3xl flex flex-col items-center justify-center transition-all border",
+                                isSameDay(d, selectedDate)
+                                  ? "bg-accent text-white border-accent shadow-lg shadow-accent/20 scale-105"
+                                  : "bg-white text-slate-500 border-slate-100 hover:border-accent/30"
+                              )}
+                            >
+                               <span className="text-[10px] font-black uppercase tracking-widest mb-1 opacity-60">
+                                 {format(d, 'eee')}
+                               </span>
+                               <span className="text-xl font-black">
+                                 {format(d, 'd')}
+                               </span>
+                               <span className="text-[10px] font-bold mt-1 opacity-60">
+                                 {format(d, 'MMM')}
+                               </span>
+                            </button>
+                          ))}
+                       </div>
                     </div>
+
                     <div>
                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                          <Clock size={14} /> Preferred Slot
+                          <Clock size={14} /> Available Time Slots
                        </label>
-                       <select 
-                         value={time}
-                         onChange={(e) => setTime(e.target.value)}
-                         className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-accent bg-slate-50 font-bold"
-                       >
-                         <option value="">Select Time</option>
-                         {slots.map(s => <option key={s} value={s}>{s}</option>)}
-                       </select>
+                       <div className="grid grid-cols-3 gap-3">
+                         {slots.map(s => (
+                           <button
+                             key={s}
+                             onClick={() => setTime(s)}
+                             className={cn(
+                               "py-3 rounded-2xl text-xs font-bold border transition-all",
+                               time === s 
+                                 ? "bg-slate-900 text-white border-slate-900 shadow-lg"
+                                 : "bg-slate-50 text-slate-600 border-slate-100 hover:bg-slate-100"
+                             )}
+                           >
+                             {s}
+                           </button>
+                         ))}
+                       </div>
                     </div>
                  </div>
 

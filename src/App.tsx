@@ -21,6 +21,7 @@ import DiseaseDetail from './pages/DiseaseDetail';
 import Dashboard from './pages/Dashboard';
 import AuthPage from './pages/Auth';
 import AIAgent from './components/AIAgent';
+import { useReminderManager } from './hooks/useReminders';
 
 const AuthContext = createContext<{
   user: UserProfile | null;
@@ -39,6 +40,9 @@ export const useAuth = () => useContext(AuthContext);
 export default function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Background Automated Reminder System
+  useReminderManager(user?.uid);
 
   useEffect(() => {
     const seed = async (currentUser: UserProfile) => {

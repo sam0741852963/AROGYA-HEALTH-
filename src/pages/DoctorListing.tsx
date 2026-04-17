@@ -7,6 +7,7 @@ import { Search, Filter, Star, Clock, MapPin, IndianRupee, ChevronRight, Stethos
 import { cn, formatCurrency } from '../lib/utils';
 import AppointmentModal from '../components/AppointmentModal';
 import { suggestExperts } from '../services/geminiService';
+import { getSpecializationIcon } from '../constants/specializationIcons';
 
 export default function DoctorListing() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -181,8 +182,8 @@ export default function DoctorListing() {
                       alt={doctor.name} 
                       referrerPolicy="no-referrer"
                     />
-                    <div className="absolute -bottom-2 -right-2 bg-accent text-white p-2 rounded-2xl shadow-lg">
-                      <Stethoscope size={16} />
+                    <div className="absolute -bottom-2 -right-2 bg-accent text-white p-2 rounded-2xl shadow-lg ring-4 ring-white">
+                      {getSpecializationIcon(doctor.department)}
                     </div>
                   </div>
                   <div className="flex-grow pt-1">
