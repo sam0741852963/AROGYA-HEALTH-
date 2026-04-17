@@ -1,0 +1,8 @@
+{
+  "name": "Aarogya Healthcare - Hospital Management System",
+  "description": "A professional hospital appointment scheduling platform with doctor listings, appointment management, disease information, and AI-powered symptom analysis.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": []
+}

@@ -1,0 +1,101 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a patient or administrator in the system.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["patient", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Doctor": {
+      "title": "Doctor",
+      "description": "Represents a healthcare professional.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "specialization": { "type": "string" },
+        "department": { "type": "string" },
+        "experience": { "type": "number" },
+        "chargesINR": { "type": "number" },
+        "availability": { "type": "array" },
+        "rating": { "type": "number" },
+        "hospital": { "type": "string" },
+        "image": { "type": "string" },
+        "bio": { "type": "string" }
+      },
+      "required": ["name", "specialization", "chargesINR"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "An appointment booked by a patient.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "doctorId": { "type": "string" },
+        "doctorName": { "type": "string" },
+        "patientName": { "type": "string" },
+        "patientEmail": { "type": "string" },
+        "date": { "type": "string" },
+        "timeSlot": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "cancelled", "completed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "doctorId", "date", "timeSlot", "status"]
+    },
+    "Disease": {
+      "title": "Disease",
+      "description": "Information about a specific medical condition.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "symptoms": { "type": "string" },
+        "causes": { "type": "string" },
+        "treatments": { "type": "string" },
+        "image": { "type": "string" }
+      },
+      "required": ["name", "description"]
+    },
+    "Analysis": {
+      "title": "Analysis",
+      "description": "AI-generated symptom analysis report.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "query": { "type": "string" },
+        "report": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "query", "report"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "User" },
+      "description": "Store patient profiles and roles."
+    },
+    "/doctors/{doctorId}": {
+      "schema": { "$ref": "Doctor" },
+      "description": "Catalogue of doctors available for appointments."
+    },
+    "/appointments/{appointmentId}": {
+      "schema": { "$ref": "Appointment" },
+      "description": "Records of all scheduled appointments."
+    },
+    "/diseases/{diseaseId}": {
+      "schema": { "$ref": "Disease" },
+      "description": "Information database for medical conditions."
+    },
+    "/analysis/{analysisId}": {
+      "schema": { "$ref": "Analysis" },
+      "description": "User's AI symptom analysis history."
+    }
+  }
+}
