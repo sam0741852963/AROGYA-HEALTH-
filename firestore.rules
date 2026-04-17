@@ -34,6 +34,8 @@
 //   - doctorName: string (optional)
 //   - patientName: string (optional)
 //   - patientEmail: string (optional) - email format
+//   - patientPhone: string (required)
+//   - reason: string (optional)
 //   - date: string (required)
 //   - timeSlot: string (required)
 //   - status: string (required) - ['pending', 'confirmed', 'cancelled', 'completed']
@@ -117,6 +119,11 @@ service cloud.firestore {
 
     match /diseases/{diseaseId} {
       allow read: if true; // Public access
+      allow write: if isAdmin();
+    }
+
+    match /metadata/{id} {
+      allow read: if true;
       allow write: if isAdmin();
     }
 

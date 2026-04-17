@@ -2,6 +2,52 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+export async function consultAgent(input: string, language: string = 'English') {
+  const model = "gemini-3-flash-preview";
+  const prompt = `You are a professional medical triage AI assistant for Aarogya Healthcare.
+  The user will describe symptoms or ask health questions. 
+  Your goals:
+  1. Identify the most likely condition/disease (with strong medical disclaimers).
+  2. Recommend the appropriate medical specialization/department (e.g., Cardiology, Neurology).
+  3. Provide 3-4 clear actionable next steps.
+  4. Respond strictly in the following language: ${language}.
+  
+  User Input: "${input}"
+  
+  Return the response as a valid JSON object with:
+  {
+    "identifiedDisease": "name of likely condition",
+    "specialization": "recommended department",
+    "analysis": "detailed explanation in ${language}",
+    "nextSteps": ["step 1", "step 2", ...]
+  }`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: model,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            identifiedDisease: { type: Type.STRING },
+            specialization: { type: Type.STRING },
+            analysis: { type: Type.STRING },
+            nextSteps: { type: Type.ARRAY, items: { type: Type.STRING } }
+          },
+          required: ["identifiedDisease", "specialization", "analysis", "nextSteps"]
+        }
+      }
+    });
+    
+    return JSON.parse(response.text);
+  } catch (error) {
+    console.error("AI Agent Consultation Error:", error);
+    throw new Error("I'm having trouble analyzing your symptoms. Please consult a doctor manually.");
+  }
+}
+
 export async function suggestExperts(specialty: string, locality: string) {
   const model = "gemini-3-flash-preview";
   const prompt = `Find 3 real top-rated doctors for ${specialty} in ${locality}, India. 

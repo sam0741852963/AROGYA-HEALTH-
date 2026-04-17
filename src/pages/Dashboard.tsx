@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Appointment, UserProfile } from '../types';
 import { useAuth } from '../App';
 import { motion } from 'motion/react';
@@ -17,25 +17,36 @@ export default function Dashboard() {
     if (!user) return;
     
     // If admin, show all. If patient, show only theirs.
+    const path = 'appointments';
     const q = user.role === 'admin' 
-      ? query(collection(db, 'appointments'))
-      : query(collection(db, 'appointments'), where('userId', '==', user.uid));
+      ? query(collection(db, path))
+      : query(collection(db, path), where('userId', '==', user.uid));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setAppointments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment)));
       setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, path);
     });
 
     return () => unsubscribe();
   }, [user]);
 
   const updateStatus = async (id: string, status: string) => {
-    await updateDoc(doc(db, 'appointments', id), { status });
+    try {
+      await updateDoc(doc(db, 'appointments', id), { status });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `appointments/${id}`);
+    }
   };
 
   const cancelAppointment = async (id: string) => {
     if (window.confirm('Are you sure you want to cancel this appointment?')) {
-      await updateDoc(doc(db, 'appointments', id), { status: 'cancelled' });
+      try {
+        await updateDoc(doc(db, 'appointments', id), { status: 'cancelled' });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `appointments/${id}`);
+      }
     }
   };
 
@@ -94,7 +105,10 @@ export default function Dashboard() {
                                   </div>
                                   <div>
                                      <div className="font-bold text-slate-900">{apt.doctorName}</div>
-                                     <div className="text-xs text-slate-500">Patient: {apt.patientName}</div>
+                                     <div className="text-xs text-slate-500">
+                                        Patient: {apt.patientName} 
+                                        {apt.patientPhone && <span className="ml-2 opacity-50">({apt.patientPhone})</span>}
+                                     </div>
                                   </div>
                                </div>
                             </td>

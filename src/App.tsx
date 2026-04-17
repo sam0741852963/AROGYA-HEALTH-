@@ -20,6 +20,7 @@ import DoctorListing from './pages/DoctorListing';
 import DiseaseDetail from './pages/DiseaseDetail';
 import Dashboard from './pages/Dashboard';
 import AuthPage from './pages/Auth';
+import AIAgent from './components/AIAgent';
 
 const AuthContext = createContext<{
   user: UserProfile | null;
@@ -40,32 +41,37 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Seed data on first load
-    const seed = async () => {
-      const doctorsSnap = await getDoc(doc(db, 'metadata', 'seeded_v2'));
-      if (!doctorsSnap.exists()) {
-        const doctorsCol = collection(db, 'doctors');
-        const diseasesCol = collection(db, 'diseases');
-        
-        // Clear previous seed if necessary (optional, but good for clean dev)
-        for (const docData of SEED_DOCTORS) {
-          await addDoc(doctorsCol, { ...docData, createdAt: new Date().toISOString() });
+    const seed = async (currentUser: UserProfile) => {
+      if (currentUser.role !== 'admin') return;
+
+      try {
+        const doctorsSnap = await getDoc(doc(db, 'metadata', 'seeded_v1'));
+        if (!doctorsSnap.exists()) {
+          const doctorsCol = collection(db, 'doctors');
+          const diseasesCol = collection(db, 'diseases');
+          
+          for (const docData of SEED_DOCTORS) {
+            await addDoc(doctorsCol, { ...docData, createdAt: new Date().toISOString() });
+          }
+          for (const disData of SEED_DISEASES) {
+            await addDoc(diseasesCol, { ...disData, createdAt: new Date().toISOString() });
+          }
+          await setDoc(doc(db, 'metadata', 'seeded_v1'), { date: new Date().toISOString() });
         }
-        for (const disData of SEED_DISEASES) {
-          await addDoc(diseasesCol, { ...disData, createdAt: new Date().toISOString() });
-        }
-        await setDoc(doc(db, 'metadata', 'seeded_v2'), { date: new Date().toISOString() });
+      } catch (error) {
+        console.error("Seeding error:", error);
       }
     };
-    seed();
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        let currentUser: UserProfile;
+        
         if (userDoc.exists()) {
-          setUser(userDoc.data() as UserProfile);
+          currentUser = userDoc.data() as UserProfile;
         } else {
-          const newUser: UserProfile = {
+          currentUser = {
             uid: firebaseUser.uid,
             email: firebaseUser.email || '',
             displayName: firebaseUser.displayName || 'Guest',
@@ -73,9 +79,11 @@ export default function App() {
             role: firebaseUser.email === 'sameerkesharwani2006@gmail.com' ? 'admin' : 'patient',
             createdAt: new Date().toISOString(),
           };
-          await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
-          setUser(newUser);
+          await setDoc(doc(db, 'users', firebaseUser.uid), currentUser);
         }
+        setUser(currentUser);
+        // Trigger seed check after auth is ready
+        seed(currentUser);
       } else {
         setUser(null);
       }
@@ -117,6 +125,7 @@ export default function App() {
               </Routes>
             </AnimatePresence>
           </main>
+          <AIAgent />
           <Footer />
         </div>
       </Router>
